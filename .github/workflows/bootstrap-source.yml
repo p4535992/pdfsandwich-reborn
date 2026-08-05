@@ -69,8 +69,8 @@ jobs:
         if: steps.source.outputs.changed == 'true'
         shell: bash
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "4535992"
+          git config user.email "tentimarco0@gmail.com"
           git add \
             Makefile UPSTREAM_README.md UPSTREAM_SOURCE \
             changelog changelog2deb.pl configure copyright ebuild-stub \
