@@ -59,11 +59,14 @@ jobs:
         run: |
           set -euo pipefail
           version="$(tr -d '[:space:]' < pdfsandwich_version)"
-          tag="v${version}-rc1"
-
-          if gh release view "$tag" >/dev/null 2>&1; then
-            gh release delete "$tag" --yes --cleanup-tag
-          fi
+          latest_rc="$(
+            gh release list --limit 100 --json tagName --jq '.[].tagName' \
+              | sed -n "s/^v${version}-rc\([0-9][0-9]*\)$/\1/p" \
+              | sort -n \
+              | tail -n 1
+          )"
+          next_rc="$(( ${latest_rc:-0} + 1 ))"
+          tag="v${version}-rc${next_rc}"
 
           gh release create "$tag" release-artifacts/* \
             --target "$TARGET_SHA" \
