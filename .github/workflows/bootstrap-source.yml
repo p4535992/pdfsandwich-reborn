@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - 'agent/import-source-and-packaging'
+      - 'update/**'
     paths:
       - '.github/workflows/bootstrap-source.yml'
       - 'scripts/import-upstream.sh'
