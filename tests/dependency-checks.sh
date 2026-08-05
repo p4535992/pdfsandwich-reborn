@@ -9,7 +9,14 @@ if [[ ! -x "$BINARY" ]]; then
   exit 2
 fi
 
-TRUE_BIN="$(command -v true)"
+# `command -v true` may return the shell builtin name rather than a filesystem
+# path. `type -P` guarantees that the generated test symlinks are executable.
+TRUE_BIN="$(type -P true)"
+if [[ -z "$TRUE_BIN" || ! -x "$TRUE_BIN" ]]; then
+  echo "Could not locate the external true executable." >&2
+  exit 2
+fi
+
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 BIN_DIR="$WORK_DIR/bin"
