@@ -9,13 +9,13 @@ USER root
 ARG DEBIAN_FRONTEND=noninteractive
 ARG PDFSANDWICH_VERSION=0.1.7.1
 ARG PDFSANDWICH_RELEASE_TAG=
-ARG PDFSANDWICH_REPOSITORY=p4535992/pdfsandwich
+ARG PDFSANDWICH_REPOSITORY=p4535992/pdfsandwich-reborn
 ARG TESSERACT_LANGUAGES=all
 
 LABEL org.opencontainers.image.title="pdfsandwich release runtime (Debian/Ubuntu)" \
       org.opencontainers.image.description="Release-installable pdfsandwich runtime on Eclipse Temurin 21 JRE" \
       org.opencontainers.image.version="${PDFSANDWICH_VERSION}" \
-      org.opencontainers.image.source="https://github.com/p4535992/pdfsandwich" \
+      org.opencontainers.image.source="https://github.com/p4535992/pdfsandwich-reborn" \
       org.opencontainers.image.base.name="docker.io/library/eclipse-temurin:21-jre" \
       org.opencontainers.image.licenses="LicenseRef-Aggregate-See-Third-Party-Notices"
 

@@ -33,7 +33,7 @@ ARG TESSERACT_LANGUAGES=all
 LABEL org.opencontainers.image.title="pdfsandwich full runtime (Debian/Ubuntu)" \
       org.opencontainers.image.description="pdfsandwich with open-source Ghostscript, Tesseract, Poppler, ImageMagick, unpaper and ExactImage on Eclipse Temurin 21 JRE" \
       org.opencontainers.image.version="${PDFSANDWICH_VERSION}" \
-      org.opencontainers.image.source="https://github.com/p4535992/pdfsandwich" \
+      org.opencontainers.image.source="https://github.com/p4535992/pdfsandwich-reborn" \
       org.opencontainers.image.base.name="docker.io/library/eclipse-temurin:21-jre" \
       org.opencontainers.image.licenses="LicenseRef-Aggregate-See-Third-Party-Notices"
 

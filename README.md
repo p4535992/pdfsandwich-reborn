@@ -1,6 +1,8 @@
-# pdfsandwich
+# pdfsandwich-reborn
 
-A maintained continuation and packaging workspace for **pdfsandwich**, the command-line tool that adds an OCR text layer behind scanned PDF pages.
+A maintained continuation and packaging workspace named **pdfsandwich-reborn** for **pdfsandwich**, the command-line tool that adds an OCR text layer behind scanned PDF pages.
+
+> **Project naming:** `pdfsandwich-reborn` is the maintained project name. The executable and native package remain `pdfsandwich` for compatibility.
 
 > This repository is not the original upstream project. The original author is Tobias Elze. Upstream history, copyright and GPL licensing are preserved.
 

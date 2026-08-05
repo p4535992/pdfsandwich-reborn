@@ -6,8 +6,8 @@ Build-Depends: debhelper-compat (= 13), ocaml-nox, gawk
 Standards-Version: 4.7.0
 Rules-Requires-Root: no
 Homepage: https://www.tobias-elze.de/pdfsandwich/
-Vcs-Git: https://github.com/p4535992/pdfsandwich.git
-Vcs-Browser: https://github.com/p4535992/pdfsandwich
+Vcs-Git: https://github.com/p4535992/pdfsandwich-reborn.git
+Vcs-Browser: https://github.com/p4535992/pdfsandwich-reborn
 
 Package: pdfsandwich
 Architecture: any

@@ -3,7 +3,7 @@ set -euo pipefail
 
 PDFSANDWICH_VERSION="${PDFSANDWICH_VERSION:-0.1.7.1}"
 PDFSANDWICH_RELEASE_TAG="${PDFSANDWICH_RELEASE_TAG:-v${PDFSANDWICH_VERSION}}"
-PDFSANDWICH_REPOSITORY="${PDFSANDWICH_REPOSITORY:-p4535992/pdfsandwich}"
+PDFSANDWICH_REPOSITORY="${PDFSANDWICH_REPOSITORY:-p4535992/pdfsandwich-reborn}"
 
 # ImageMagick and unpaper are supplied through EPEL 9. Tesseract is deliberately
 # built in Dockerfile.rocky because this project does not rely on an EL9 package.

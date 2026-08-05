@@ -68,7 +68,7 @@ USER root
 
 ARG PDFSANDWICH_VERSION=0.1.7.1
 ARG PDFSANDWICH_RELEASE_TAG=
-ARG PDFSANDWICH_REPOSITORY=p4535992/pdfsandwich
+ARG PDFSANDWICH_REPOSITORY=p4535992/pdfsandwich-reborn
 ARG LEPTONICA_VERSION=1.87.0
 ARG TESSERACT_VERSION=5.5.2
 ARG TESSDATA_VERSION=4.1.0
@@ -76,7 +76,7 @@ ARG TESSDATA_VERSION=4.1.0
 LABEL org.opencontainers.image.title="pdfsandwich release runtime (Rocky Linux)" \
       org.opencontainers.image.description="Release-installable pdfsandwich runtime on Alfresco Java 21 Rocky Linux 9" \
       org.opencontainers.image.version="${PDFSANDWICH_VERSION}" \
-      org.opencontainers.image.source="https://github.com/p4535992/pdfsandwich" \
+      org.opencontainers.image.source="https://github.com/p4535992/pdfsandwich-reborn" \
       org.opencontainers.image.base.name="docker.io/alfresco/alfresco-base-java:jre21-rockylinux9" \
       org.opencontainers.image.licenses="LicenseRef-Aggregate-See-Third-Party-Notices"
 

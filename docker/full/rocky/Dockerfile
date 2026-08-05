@@ -115,7 +115,7 @@ ARG TESSDATA_VERSION=4.1.0
 LABEL org.opencontainers.image.title="pdfsandwich full runtime (Rocky Linux)" \
       org.opencontainers.image.description="pdfsandwich with open-source Ghostscript, source-built Tesseract, Poppler, ImageMagick and unpaper on Alfresco Java 21 Rocky Linux 9" \
       org.opencontainers.image.version="${PDFSANDWICH_VERSION}" \
-      org.opencontainers.image.source="https://github.com/p4535992/pdfsandwich" \
+      org.opencontainers.image.source="https://github.com/p4535992/pdfsandwich-reborn" \
       org.opencontainers.image.base.name="docker.io/alfresco/alfresco-base-java:jre21-rockylinux9" \
       org.opencontainers.image.licenses="LicenseRef-Aggregate-See-Third-Party-Notices"
 
