@@ -1,0 +1,148 @@
+name: Build packages
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - 'agent/**'
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  debian:
+    name: Debian and source packages
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Import upstream source when needed
+        shell: bash
+        run: |
+          if [[ ! -f pdfsandwich.ml ]]; then
+            bash scripts/import-upstream.sh
+          fi
+
+      - name: Install build and runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential debhelper devscripts dpkg-dev gawk make ocaml-nox \
+            imagemagick ghostscript poppler-utils \
+            tesseract-ocr tesseract-ocr-eng unpaper exactimage
+
+      - name: Build and test
+        shell: bash
+        run: |
+          chmod +x scripts/*.sh tests/*.sh contrib/*.sh debian/rules \
+            configure changelog2deb.pl make_control.pl make_portfile.pl txt2man
+          echo PREFIX=/usr > makefile.installprefix
+          make clean
+          make all
+          ./pdfsandwich -version
+          bash tests/dependency-checks.sh
+
+      - name: Build source archive
+        shell: bash
+        run: bash scripts/make-source-tarball.sh artifacts
+
+      - name: Build Debian package
+        shell: bash
+        run: |
+          dpkg-buildpackage --no-sign --build=binary
+          mkdir -p artifacts
+          cp ../pdfsandwich_*.deb artifacts/
+          cp ../pdfsandwich_*.buildinfo artifacts/ 2>/dev/null || true
+          cp ../pdfsandwich_*.changes artifacts/ 2>/dev/null || true
+          (cd artifacts && sha256sum *.deb > SHA256SUMS-debian)
+
+      - name: Upload Debian artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdfsandwich-debian
+          path: artifacts/
+          if-no-files-found: error
+
+  rpm:
+    name: Fedora RPM and source RPM
+    runs-on: ubuntu-latest
+    container: fedora:44
+    steps:
+      - name: Install checkout prerequisites
+        run: dnf install -y git-core tar gzip bzip2 patch curl findutils coreutils
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install build and runtime dependencies
+        run: |
+          dnf install -y \
+            gcc gawk make ocaml rpm-build \
+            ImageMagick ghostscript poppler-utils \
+            tesseract tesseract-langpack-eng unpaper
+
+      - name: Import upstream source when needed
+        shell: bash
+        run: |
+          if [[ ! -f pdfsandwich.ml ]]; then
+            bash scripts/import-upstream.sh
+          fi
+
+      - name: Build, test and create source archive
+        shell: bash
+        run: |
+          chmod +x scripts/*.sh tests/*.sh contrib/*.sh \
+            configure changelog2deb.pl make_control.pl make_portfile.pl txt2man
+          echo PREFIX=/usr > makefile.installprefix
+          make clean
+          make all
+          ./pdfsandwich -version
+          bash tests/dependency-checks.sh
+          bash scripts/make-source-tarball.sh artifacts
+
+      - name: Build RPM and SRPM
+        shell: bash
+        run: |
+          version="$(tr -d '[:space:]' < pdfsandwich_version)"
+          topdir="$PWD/rpmbuild"
+          mkdir -p "$topdir"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
+          cp "artifacts/pdfsandwich-${version}.tar.gz" "$topdir/SOURCES/"
+          cp packaging/pdfsandwich.spec "$topdir/SPECS/"
+          rpmbuild --define "_topdir $topdir" -ba "$topdir/SPECS/pdfsandwich.spec"
+          find "$topdir/RPMS" "$topdir/SRPMS" -type f -name '*.rpm' -exec cp {} artifacts/ \;
+          (cd artifacts && sha256sum *.rpm > SHA256SUMS-rpm)
+
+      - name: Upload RPM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdfsandwich-rpm
+          path: artifacts/
+          if-no-files-found: error
+
+  release:
+    name: Publish tagged release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [debian, rpm]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" release-artifacts/* --generate-notes
