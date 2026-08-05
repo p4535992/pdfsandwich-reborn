@@ -1,0 +1,88 @@
+name: Import upstream source
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'update/**'
+    paths:
+      - '.github/workflows/bootstrap-source.yml'
+      - 'scripts/import-upstream.sh'
+      - 'scripts/apply-maintenance.py'
+      - 'tests/**'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: bootstrap-source-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  import:
+    name: Import, maintain, validate and commit
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Import upstream source
+        id: source
+        shell: bash
+        run: |
+          if [[ -f pdfsandwich.ml ]]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Source is already present; no import is needed."
+          else
+            bash scripts/import-upstream.sh
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install validation dependencies
+        if: steps.source.outputs.changed == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential gawk make ocaml-nox perl \
+            imagemagick ghostscript poppler-utils \
+            tesseract-ocr tesseract-ocr-eng unpaper exactimage
+
+      - name: Build and validate imported source
+        if: steps.source.outputs.changed == 'true'
+        shell: bash
+        run: |
+          chmod +x scripts/*.sh tests/*.sh contrib/*.sh debian/rules \
+            configure changelog2deb.pl make_control.pl make_portfile.pl txt2man
+          echo PREFIX=/usr > makefile.installprefix
+          make clean
+          make all
+          ./pdfsandwich -version
+          bash tests/dependency-checks.sh
+          make clean
+          rm -f makefile.installprefix
+
+      - name: Commit imported source
+        if: steps.source.outputs.changed == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            Makefile UPSTREAM_README.md UPSTREAM_SOURCE \
+            changelog changelog2deb.pl configure copyright ebuild-stub \
+            make_control.pl make_portfile.pl manual.txt pdfsandwich.ml \
+            pdfsandwich_version txt2man \
+            scripts/*.sh scripts/*.py tests/*.sh contrib/*.sh debian/rules
+          git commit -m "Import upstream pdfsandwich 0.1.7 source"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Run packaging workflow on imported source
+        if: steps.source.outputs.changed == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run package.yml --ref "${GITHUB_REF_NAME}"

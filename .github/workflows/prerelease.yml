@@ -1,0 +1,72 @@
+name: Publish pdfsandwich-reborn prerelease
+
+on:
+  workflow_run:
+    workflows:
+      - Build packages and runtime images
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    if: github.event.workflow_run.conclusion == 'success' && contains(github.event.workflow_run.head_commit.message, '[prerelease]')
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out validated commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Download validated build artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: gh run download "$RUN_ID" --dir downloaded-artifacts
+
+      - name: Flatten release files and add source archives
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(tr -d '[:space:]' < pdfsandwich_version)"
+          mkdir -p release-artifacts
+
+          while IFS= read -r -d '' file; do
+            cp -f "$file" "release-artifacts/$(basename "$file")"
+          done < <(find downloaded-artifacts -type f -print0)
+
+          git archive --format=tar --prefix="pdfsandwich-reborn-${version}/" HEAD \
+            | gzip -9 > "release-artifacts/pdfsandwich-reborn-${version}.tar.gz"
+          git archive --format=zip --prefix="pdfsandwich-reborn-${version}/" \
+            -o "release-artifacts/pdfsandwich-reborn-${version}.zip" HEAD
+
+          (cd release-artifacts && sha256sum \
+            "pdfsandwich-reborn-${version}.tar.gz" \
+            "pdfsandwich-reborn-${version}.zip" \
+            > SHA256SUMS-source)
+
+      - name: Create pre-release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          version="$(tr -d '[:space:]' < pdfsandwich_version)"
+          tag="v${version}-rc1"
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release delete "$tag" --yes --cleanup-tag
+          fi
+
+          gh release create "$tag" release-artifacts/* \
+            --target "$TARGET_SHA" \
+            --title "pdfsandwich-reborn ${tag}" \
+            --notes "Pre-release of pdfsandwich-reborn. Includes source tar.gz and zip archives, Debian package, Fedora and EL9 RPM/SRPM packages, full Debian/Temurin and Rocky/Alfresco runtime images, Dockerfiles, installation scripts, licenses, package manifests and SHA-256 checksums." \
+            --prerelease

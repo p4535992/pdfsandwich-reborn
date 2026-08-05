@@ -1,0 +1,21 @@
+Source: pdfsandwich
+Section: text
+Priority: optional
+Maintainer: pdfsandwich maintenance project <noreply@github.com>
+Build-Depends: debhelper-compat (= 13), ocaml-nox, gawk
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+Homepage: https://www.tobias-elze.de/pdfsandwich/
+Vcs-Git: https://github.com/p4535992/pdfsandwich-reborn.git
+Vcs-Browser: https://github.com/p4535992/pdfsandwich-reborn
+
+Package: pdfsandwich
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, imagemagick, poppler-utils, tesseract-ocr, unpaper
+Recommends: ghostscript, tesseract-ocr-eng
+Suggests: exactimage
+Description: generate searchable OCR sandwich PDF files
+ pdfsandwich processes scanned PDF files with Tesseract and adds an invisible
+ text layer behind each page image. It supports preprocessing with unpaper,
+ parallel page processing, multiple OCR languages and configurable external
+ tools.

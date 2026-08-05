@@ -1,0 +1,390 @@
+name: Build packages and runtime images
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - 'update/**'
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  debian:
+    name: Debian and source packages
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Import upstream source when needed
+        shell: bash
+        run: |
+          if [[ ! -f pdfsandwich.ml ]]; then
+            bash scripts/import-upstream.sh
+          fi
+
+      - name: Install build and runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential debhelper devscripts dpkg-dev gawk make ocaml-nox perl \
+            imagemagick ghostscript poppler-utils \
+            tesseract-ocr tesseract-ocr-eng unpaper exactimage
+
+      - name: Build and test
+        shell: bash
+        run: |
+          chmod +x scripts/*.sh tests/*.sh contrib/*.sh debian/rules \
+            configure changelog2deb.pl make_control.pl make_portfile.pl txt2man
+          echo PREFIX=/usr > makefile.installprefix
+          make clean
+          make all
+          ./pdfsandwich -version
+          bash tests/dependency-checks.sh
+
+      - name: Build source archive
+        shell: bash
+        run: bash scripts/make-source-tarball.sh artifacts
+
+      - name: Build Debian package
+        shell: bash
+        run: |
+          version="$(tr -d '[:space:]' < pdfsandwich_version)"
+          architecture="$(dpkg --print-architecture)"
+          dpkg-buildpackage --no-sign --build=binary
+          mkdir -p artifacts
+          package="$(find .. -maxdepth 1 -type f -name 'pdfsandwich_*.deb' | head -n 1)"
+          test -n "$package"
+          cp "$package" "artifacts/pdfsandwich_${version}-1_${architecture}.deb"
+          cp ../pdfsandwich_*.buildinfo artifacts/ 2>/dev/null || true
+          cp ../pdfsandwich_*.changes artifacts/ 2>/dev/null || true
+          (cd artifacts && sha256sum *.deb > SHA256SUMS-debian)
+
+      - name: Upload Debian artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdfsandwich-debian
+          path: artifacts/
+          if-no-files-found: error
+
+  rpm-fedora:
+    name: Fedora RPM and source RPM
+    runs-on: ubuntu-latest
+    container: fedora:44
+    steps:
+      - name: Install checkout prerequisites
+        run: dnf install -y git-core tar gzip bzip2 curl findutils coreutils
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install build and runtime dependencies
+        run: |
+          dnf install -y \
+            gcc gawk make ocaml perl-interpreter rpm-build \
+            ImageMagick ghostscript poppler-utils \
+            tesseract tesseract-langpack-eng unpaper
+
+      - name: Import upstream source when needed
+        shell: bash
+        run: |
+          if [[ ! -f pdfsandwich.ml ]]; then
+            bash scripts/import-upstream.sh
+          fi
+
+      - name: Build, test and create source archive
+        shell: bash
+        run: |
+          chmod +x scripts/*.sh tests/*.sh contrib/*.sh \
+            configure changelog2deb.pl make_control.pl make_portfile.pl txt2man
+          echo PREFIX=/usr > makefile.installprefix
+          make clean
+          make all
+          ./pdfsandwich -version
+          bash tests/dependency-checks.sh
+          bash scripts/make-source-tarball.sh artifacts
+
+      - name: Build Fedora RPM and SRPM
+        shell: bash
+        run: |
+          version="$(tr -d '[:space:]' < pdfsandwich_version)"
+          topdir="$PWD/rpmbuild"
+          mkdir -p "$topdir"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
+          cp "artifacts/pdfsandwich-${version}.tar.gz" "$topdir/SOURCES/"
+          cp packaging/pdfsandwich.spec "$topdir/SPECS/"
+          rpmbuild --define "_topdir $topdir" -ba "$topdir/SPECS/pdfsandwich.spec"
+          find "$topdir/RPMS" "$topdir/SRPMS" -type f -name '*.rpm' -exec cp {} artifacts/ \;
+          (cd artifacts && sha256sum *.rpm > SHA256SUMS-rpm-fedora)
+
+      - name: Upload Fedora RPM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdfsandwich-rpm-fedora
+          path: artifacts/
+          if-no-files-found: error
+
+  rpm-rocky9:
+    name: Rocky Linux 9 RPM and source RPM
+    runs-on: ubuntu-latest
+    container: rockylinux:9
+    steps:
+      - name: Enable repositories and install checkout prerequisites
+        shell: bash
+        run: |
+          dnf install -y dnf-plugins-core ca-certificates curl-minimal git-core tar gzip bzip2 findutils
+          dnf config-manager --set-enabled crb
+          dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          dnf install -y gcc gawk make ocaml perl-interpreter rpm-build
+
+      - name: Import upstream source when needed
+        shell: bash
+        run: |
+          if [[ ! -f pdfsandwich.ml ]]; then
+            bash scripts/import-upstream.sh
+          fi
+
+      - name: Build and create source archive
+        shell: bash
+        run: |
+          chmod +x scripts/*.sh tests/*.sh contrib/*.sh \
+            configure changelog2deb.pl make_control.pl make_portfile.pl txt2man
+          echo PREFIX=/usr > makefile.installprefix
+          make clean
+          make all
+          ./pdfsandwich -version
+          bash scripts/make-source-tarball.sh artifacts
+
+      - name: Build EL9 RPM and SRPM
+        shell: bash
+        run: |
+          version="$(tr -d '[:space:]' < pdfsandwich_version)"
+          topdir="$PWD/rpmbuild"
+          mkdir -p "$topdir"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
+          cp "artifacts/pdfsandwich-${version}.tar.gz" "$topdir/SOURCES/"
+          cp packaging/pdfsandwich.spec "$topdir/SPECS/"
+          rpmbuild \
+            --define "_topdir $topdir" \
+            --define "dist .el9" \
+            -ba "$topdir/SPECS/pdfsandwich.spec"
+          binary="$(find "$topdir/RPMS" -type f -name 'pdfsandwich-*.x86_64.rpm' | head -n 1)"
+          source="$(find "$topdir/SRPMS" -type f -name 'pdfsandwich-*.src.rpm' | head -n 1)"
+          test -n "$binary"
+          test -n "$source"
+          cp "$binary" "artifacts/pdfsandwich-${version}-1.el9.x86_64.rpm"
+          cp "$source" "artifacts/pdfsandwich-${version}-1.el9.src.rpm"
+          (cd artifacts && sha256sum *.rpm > SHA256SUMS-rpm-el9)
+
+      - name: Upload Rocky Linux RPM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdfsandwich-rpm-el9
+          path: artifacts/
+          if-no-files-found: error
+
+  full-runtime:
+    name: Full runtime (${{ matrix.variant }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: debian-temurin21
+            dockerfile: docker/full/debian/Dockerfile
+            image: pdfsandwich-full-debian
+            requires_hocr2pdf: 'true'
+          - variant: rocky9-alfresco-jre21
+            dockerfile: docker/full/rocky/Dockerfile
+            image: pdfsandwich-full-rocky9
+            requires_hocr2pdf: 'false'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build full runtime image
+        shell: bash
+        run: |
+          version="$(tr -d '[:space:]' < pdfsandwich_version)"
+          echo "PDFSANDWICH_VERSION=$version" >> "$GITHUB_ENV"
+          echo "IMAGE_REF=${{ matrix.image }}:$version" >> "$GITHUB_ENV"
+          docker build \
+            --build-arg "PDFSANDWICH_VERSION=$version" \
+            --tag "${{ matrix.image }}:$version" \
+            --file "${{ matrix.dockerfile }}" \
+            .
+
+      - name: Verify incorporated tools
+        shell: bash
+        run: |
+          docker run --rm --entrypoint /bin/bash \
+            "$IMAGE_REF" -euxo pipefail -c '
+              for command in pdfsandwich convert identify gs pdfinfo pdfunite pdftoppm pdftotext tesseract unpaper; do
+                command -v "$command"
+              done
+              if command -v magick >/dev/null 2>&1; then
+                magick -version
+              else
+                convert -version
+              fi
+              if [[ "${{ matrix.requires_hocr2pdf }}" == "true" ]]; then
+                command -v hocr2pdf
+              fi
+              test -x /usr/local/bin/pdfsandwich-full
+              test -x /usr/local/libexec/pdfsandwich/convert-pdftoppm.sh
+              pdfsandwich -version
+              tesseract --list-langs | grep -Fx eng
+              tesseract --list-langs | grep -Fx ita
+              gs --version
+              pdfinfo -v
+              unpaper --version
+              grep -Fx ghostscript_distribution=open-source-distro-package \
+                /opt/pdfsandwich/licenses/bundle-manifest.txt
+            '
+
+      - name: OCR smoke test
+        shell: bash
+        run: |
+          test_dir="$RUNNER_TEMP/pdfsandwich-${{ matrix.variant }}-test"
+          mkdir -p "$test_dir"
+          cat > "$test_dir/input.ps" <<'POSTSCRIPT'
+          %!PS-Adobe-3.0
+          << /PageSize [595 842] >> setpagedevice
+          /Helvetica-Bold findfont 48 scalefont setfont
+          70 500 moveto
+          (PDFSANDWICH OCR TEST) show
+          showpage
+          POSTSCRIPT
+
+          docker run --rm --entrypoint /bin/bash \
+            -v "$test_dir:/work" -w /work \
+            "$IMAGE_REF" \
+            -euxo pipefail -c 'ps2pdf input.ps input.pdf'
+
+          docker run --rm \
+            -v "$test_dir:/work" -w /work \
+            "$IMAGE_REF" \
+            -nopreproc -lang eng -o output.pdf input.pdf
+
+          docker run --rm --entrypoint /bin/bash \
+            -v "$test_dir:/work" -w /work \
+            "$IMAGE_REF" \
+            -euxo pipefail -c '
+              pdfinfo output.pdf
+              pdftotext output.pdf - | tr "[:lower:]" "[:upper:]" | grep -F "PDFSANDWICH"
+            '
+
+      - name: Export image, manifests and licenses
+        shell: bash
+        run: |
+          mkdir -p artifacts/license-export/project
+          variant="${{ matrix.variant }}"
+          image_archive="pdfsandwich-full-${variant}-${PDFSANDWICH_VERSION}-linux-amd64.docker.tar.gz"
+          license_archive="pdfsandwich-full-${variant}-${PDFSANDWICH_VERSION}-licenses.tar.gz"
+          package_manifest="pdfsandwich-full-${variant}-${PDFSANDWICH_VERSION}-packages.tsv"
+
+          docker save "$IMAGE_REF" | gzip -1 > "artifacts/$image_archive"
+
+          container_id="$(docker create "$IMAGE_REF")"
+          trap 'docker rm -f "$container_id" >/dev/null 2>&1 || true' EXIT
+          docker cp "$container_id:/opt/pdfsandwich/licenses/." artifacts/license-export/
+          docker cp "$container_id:/opt/pdfsandwich/THIRD_PARTY_NOTICES.md" artifacts/license-export/
+          docker cp "$container_id:/opt/pdfsandwich/project/." artifacts/license-export/project/
+          docker rm "$container_id"
+          trap - EXIT
+
+          tar -czf "artifacts/$license_archive" -C artifacts/license-export .
+          cp THIRD_PARTY_NOTICES.md artifacts/
+          cp artifacts/license-export/installed-packages.tsv "artifacts/$package_manifest"
+          rm -rf artifacts/license-export
+
+          (cd artifacts && sha256sum \
+            "$image_archive" \
+            "$license_archive" \
+            "$package_manifest" \
+            > "SHA256SUMS-${variant}")
+
+      - name: Upload full runtime artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdfsandwich-full-${{ matrix.variant }}
+          path: artifacts/
+          if-no-files-found: error
+          compression-level: 0
+
+  release-files:
+    name: Standalone release Dockerfiles
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Prepare Dockerfiles and installation scripts
+        shell: bash
+        run: |
+          version="$(tr -d '[:space:]' < pdfsandwich_version)"
+          mkdir -p artifacts/pdfsandwich-dockerfiles-${version}
+          cp docker/release/debian/Dockerfile artifacts/Dockerfile.debian
+          cp docker/release/rocky/Dockerfile artifacts/Dockerfile.rocky
+          cp docker/release/install-debian.sh artifacts/install-debian.sh
+          cp docker/release/install-rocky.sh artifacts/install-rocky.sh
+          cp docker/release/README.md artifacts/DOCKER-IMAGES.md
+          cp artifacts/Dockerfile.debian artifacts/Dockerfile.rocky \
+            artifacts/install-debian.sh artifacts/install-rocky.sh \
+            artifacts/DOCKER-IMAGES.md \
+            "artifacts/pdfsandwich-dockerfiles-${version}/"
+          chmod 0755 artifacts/install-debian.sh artifacts/install-rocky.sh \
+            "artifacts/pdfsandwich-dockerfiles-${version}/install-debian.sh" \
+            "artifacts/pdfsandwich-dockerfiles-${version}/install-rocky.sh"
+          tar -czf "artifacts/pdfsandwich-dockerfiles-${version}.tar.gz" \
+            -C artifacts "pdfsandwich-dockerfiles-${version}"
+          rm -rf "artifacts/pdfsandwich-dockerfiles-${version}"
+          (cd artifacts && sha256sum \
+            Dockerfile.debian Dockerfile.rocky \
+            install-debian.sh install-rocky.sh DOCKER-IMAGES.md \
+            "pdfsandwich-dockerfiles-${version}.tar.gz" \
+            > SHA256SUMS-dockerfiles)
+
+      - name: Upload release Dockerfiles
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdfsandwich-release-dockerfiles
+          path: artifacts/
+          if-no-files-found: error
+
+  release:
+    name: Publish tagged release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - debian
+      - rpm-fedora
+      - rpm-rocky9
+      - full-runtime
+      - release-files
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" release-artifacts/* --generate-notes
