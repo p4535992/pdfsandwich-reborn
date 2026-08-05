@@ -17,7 +17,7 @@ The import script downloads the original SourceForge archive, verifies its check
 
 ## License
 
-The original source is licensed under the **GNU General Public License, version 2 or, at your option, any later version** (`GPL-2.0-or-later`). Original copyright notices are retained. See `LICENSE` and `copyright`.
+The original source is licensed under the **GNU General Public License, version 2 or, at your option, any later version** (`GPL-2.0-or-later`). Original copyright notices are retained. `LICENSE` contains the complete verbatim GNU GPL version 2 text, while `copyright` preserves the upstream “version 2 or later” grant and attribution.
 
 ## Runtime dependencies
 
