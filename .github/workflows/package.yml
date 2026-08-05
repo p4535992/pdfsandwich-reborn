@@ -140,7 +140,7 @@ jobs:
       - name: Enable repositories and install checkout prerequisites
         shell: bash
         run: |
-          dnf install -y dnf-plugins-core ca-certificates curl git-core tar gzip bzip2 findutils coreutils
+          dnf install -y dnf-plugins-core ca-certificates curl-minimal git-core tar gzip bzip2 findutils
           dnf config-manager --set-enabled crb
           dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
 
