@@ -2,7 +2,7 @@
 
 FROM rockylinux:9 AS pdfsandwich-builder
 
-RUN dnf install -y dnf-plugins-core ca-certificates curl \
+RUN dnf install -y dnf-plugins-core ca-certificates curl-minimal \
     && dnf config-manager --set-enabled crb \
     && dnf install -y \
       https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm \
@@ -35,7 +35,7 @@ ARG LEPTONICA_VERSION=1.87.0
 ARG TESSERACT_VERSION=5.5.2
 ARG TESSDATA_VERSION=4.1.0
 
-RUN dnf install -y dnf-plugins-core ca-certificates curl \
+RUN dnf install -y dnf-plugins-core ca-certificates curl-minimal \
     && dnf config-manager --set-enabled crb \
     && dnf install -y \
       https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm \
@@ -119,7 +119,7 @@ LABEL org.opencontainers.image.title="pdfsandwich full runtime (Rocky Linux)" \
       org.opencontainers.image.base.name="docker.io/alfresco/alfresco-base-java:jre21-rockylinux9" \
       org.opencontainers.image.licenses="LicenseRef-Aggregate-See-Third-Party-Notices"
 
-RUN dnf install -y dnf-plugins-core ca-certificates curl findutils gzip tar \
+RUN dnf install -y dnf-plugins-core ca-certificates curl-minimal findutils gzip tar \
     && dnf config-manager --set-enabled crb \
     && dnf install -y \
       https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm \
