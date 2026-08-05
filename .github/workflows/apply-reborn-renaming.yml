@@ -59,6 +59,7 @@ jobs:
 
           workflow = Path(".github/workflows/package.yml")
           text = workflow.read_text(encoding="utf-8")
+          matrix_expr = "${" + "{ matrix.variant }}"
           replacements = {
               "name: pdfsandwich-debian": "name: pdfsandwich-reborn-debian",
               "name: pdfsandwich-rpm-fedora": "name: pdfsandwich-reborn-rpm-fedora",
@@ -66,7 +67,7 @@ jobs:
               "image: pdfsandwich-full-debian": "image: pdfsandwich-reborn-full-debian",
               "image: pdfsandwich-full-rocky9": "image: pdfsandwich-reborn-full-rocky9",
               "pdfsandwich-full-${variant}": "pdfsandwich-reborn-full-${variant}",
-              "name: pdfsandwich-full-${{ matrix.variant }}": "name: pdfsandwich-reborn-full-${{ matrix.variant }}",
+              "name: pdfsandwich-full-" + matrix_expr: "name: pdfsandwich-reborn-full-" + matrix_expr,
               "pdfsandwich-dockerfiles-${version}": "pdfsandwich-reborn-dockerfiles-${version}",
               "name: pdfsandwich-release-dockerfiles": "name: pdfsandwich-reborn-release-dockerfiles",
           }
@@ -76,7 +77,7 @@ jobs:
           release_marker = "  release:\n"
           if release_marker not in text:
               raise SystemExit("release job marker not found")
-          text = text.split(release_marker, 1)[0] + r'''  release:
+          release_job = r'''  release:
     name: Publish release or prerelease
     if: startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[prerelease]'))
     needs:
@@ -117,7 +118,7 @@ jobs:
       - name: Create GitHub release
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: __GH_TOKEN_EXPR__
         run: |
           version="$(tr -d '[:space:]' < pdfsandwich_version)"
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
@@ -138,6 +139,8 @@ jobs:
             --generate-notes \
             "${prerelease[@]}"
 '''
+          release_job = release_job.replace("__GH_TOKEN_EXPR__", "${" + "{ github.token }}")
+          text = text.split(release_marker, 1)[0] + release_job
           workflow.write_text(text, encoding="utf-8")
           PY
 
