@@ -1,0 +1,17 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	echo PREFIX=/usr > makefile.installprefix
+
+override_dh_auto_build:
+	$(MAKE) all
+
+override_dh_auto_install:
+	$(MAKE) DESTDIR=$(CURDIR)/debian/pdfsandwich PREFIX=/usr INSTALL=install install
+
+override_dh_auto_clean:
+	$(MAKE) clean || true
+	rm -f makefile.installprefix
