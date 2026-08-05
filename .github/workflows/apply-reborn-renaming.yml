@@ -1,0 +1,149 @@
+name: Apply pdfsandwich-reborn naming
+
+on:
+  push:
+    branches:
+      - update/full-runtime-bundle
+    paths:
+      - .github/workflows/apply-reborn-renaming.yml
+
+permissions:
+  contents: write
+
+jobs:
+  rename:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Rename project-facing references and release assets
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          old_repo = "p4535992/pdfsandwich"
+          new_repo = "p4535992/pdfsandwich-reborn"
+
+          tracked = subprocess.check_output(["git", "ls-files", "-z"]).split(b"\0")
+          for raw in tracked:
+              if not raw:
+                  continue
+              path = Path(raw.decode())
+              if path.as_posix() == ".github/workflows/apply-reborn-renaming.yml":
+                  continue
+              try:
+                  text = path.read_text(encoding="utf-8")
+              except (UnicodeDecodeError, IsADirectoryError):
+                  continue
+              updated = text.replace(old_repo, new_repo)
+              if path.name == "README.md":
+                  updated = updated.replace("# pdfsandwich\n", "# pdfsandwich-reborn\n", 1)
+                  updated = updated.replace(
+                      "A maintained continuation and packaging workspace for **pdfsandwich**",
+                      "A maintained continuation and packaging workspace named **pdfsandwich-reborn** for **pdfsandwich**",
+                      1,
+                  )
+                  marker = "> This repository is not the original upstream project."
+                  note = (
+                      "> **Project naming:** `pdfsandwich-reborn` is the maintained project and repository name. "
+                      "The installed executable and native package remain `pdfsandwich` for compatibility.\n\n"
+                  )
+                  if note not in updated and marker in updated:
+                      updated = updated.replace(marker, note + marker, 1)
+              if updated != text:
+                  path.write_text(updated, encoding="utf-8")
+
+          workflow = Path(".github/workflows/package.yml")
+          text = workflow.read_text(encoding="utf-8")
+          replacements = {
+              "name: pdfsandwich-debian": "name: pdfsandwich-reborn-debian",
+              "name: pdfsandwich-rpm-fedora": "name: pdfsandwich-reborn-rpm-fedora",
+              "name: pdfsandwich-rpm-el9": "name: pdfsandwich-reborn-rpm-el9",
+              "image: pdfsandwich-full-debian": "image: pdfsandwich-reborn-full-debian",
+              "image: pdfsandwich-full-rocky9": "image: pdfsandwich-reborn-full-rocky9",
+              "pdfsandwich-full-${variant}": "pdfsandwich-reborn-full-${variant}",
+              "name: pdfsandwich-full-${{ matrix.variant }}": "name: pdfsandwich-reborn-full-${{ matrix.variant }}",
+              "pdfsandwich-dockerfiles-${version}": "pdfsandwich-reborn-dockerfiles-${version}",
+              "name: pdfsandwich-release-dockerfiles": "name: pdfsandwich-reborn-release-dockerfiles",
+          }
+          for old, new in replacements.items():
+              text = text.replace(old, new)
+
+          release_marker = "  release:\n"
+          if release_marker not in text:
+              raise SystemExit("release job marker not found")
+          text = text.split(release_marker, 1)[0] + r'''  release:
+    name: Publish release or prerelease
+    if: startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[prerelease]'))
+    needs:
+      - debian
+      - rpm-fedora
+      - rpm-rocky9
+      - full-runtime
+      - release-files
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Add explicit source tar.gz and zip archives
+        shell: bash
+        run: |
+          version="$(tr -d '[:space:]' < pdfsandwich_version)"
+          mkdir -p release-artifacts
+          git archive --format=tar --prefix="pdfsandwich-reborn-${version}/" HEAD \
+            | gzip -9 > "release-artifacts/pdfsandwich-reborn-${version}.tar.gz"
+          git archive --format=zip --prefix="pdfsandwich-reborn-${version}/" \
+            -o "release-artifacts/pdfsandwich-reborn-${version}.zip" HEAD
+          (cd release-artifacts && sha256sum \
+            "pdfsandwich-reborn-${version}.tar.gz" \
+            "pdfsandwich-reborn-${version}.zip" \
+            > SHA256SUMS-source)
+
+      - name: Create GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(tr -d '[:space:]' < pdfsandwich_version)"
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            tag="$GITHUB_REF_NAME"
+            prerelease=()
+          else
+            tag="v${version}-rc1"
+            prerelease=(--prerelease)
+          fi
+
+          gh release view "$tag" >/dev/null 2>&1 \
+            && gh release delete "$tag" --yes --cleanup-tag \
+            || true
+
+          gh release create "$tag" release-artifacts/* \
+            --target "$GITHUB_SHA" \
+            --title "pdfsandwich-reborn ${tag}" \
+            --generate-notes \
+            "${prerelease[@]}"
+'''
+          workflow.write_text(text, encoding="utf-8")
+          PY
+
+          git rm .github/workflows/apply-reborn-renaming.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Rename project to pdfsandwich-reborn and add source zip releases"
+          git push origin HEAD:update/full-runtime-bundle
