@@ -1,0 +1,42 @@
+# OCaml build outputs
+*.a
+*.cmi
+*.cmo
+*.cmx
+*.cmxa
+*.o
+*.so
+pdfsandwich
+pdfsandwich_version.ml
+pdfsandwich.1.gz
+
+# Generated configuration
+makefile.installprefix
+
+# Debian packaging outputs
+debian/.debhelper/
+debian/files
+debian/pdfsandwich/
+debian/pdfsandwich.debhelper.log
+debian/pdfsandwich.substvars
+obj-*/
+*.build
+*.buildinfo
+*.changes
+*.deb
+*.dsc
+*.debian.tar.*
+
+# RPM and release outputs
+rpmbuild/
+artifacts/
+*.rpm
+*.src.rpm
+*.tar.gz
+*.tar.bz2
+*.sha256
+
+# Editor and OS files
+.DS_Store
+*.swp
+*~
