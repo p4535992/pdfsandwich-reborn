@@ -36,7 +36,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            build-essential debhelper devscripts dpkg-dev gawk make ocaml-nox \
+            build-essential debhelper devscripts dpkg-dev gawk make ocaml-nox perl \
             imagemagick ghostscript poppler-utils \
             tesseract-ocr tesseract-ocr-eng unpaper exactimage
 
@@ -78,7 +78,7 @@ jobs:
     container: fedora:44
     steps:
       - name: Install checkout prerequisites
-        run: dnf install -y git-core tar gzip bzip2 patch curl findutils coreutils
+        run: dnf install -y git-core tar gzip bzip2 curl findutils coreutils
 
       - name: Check out repository
         uses: actions/checkout@v4
@@ -86,7 +86,7 @@ jobs:
       - name: Install build and runtime dependencies
         run: |
           dnf install -y \
-            gcc gawk make ocaml rpm-build \
+            gcc gawk make ocaml perl-interpreter rpm-build \
             ImageMagick ghostscript poppler-utils \
             tesseract tesseract-langpack-eng unpaper
 
