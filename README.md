@@ -13,47 +13,49 @@ A maintained continuation and packaging workspace for **pdfsandwich**, the comma
 - Upstream archive: `pdfsandwich-0.1.7.tar.bz2`
 - Verified upstream MD5: `60e617cc398251cec5f42b870b1fccb4`
 
-The import script downloads the original SourceForge archive, verifies its checksum, validates the expected file layout, extracts it, and applies the exact source transformations defined in `scripts/apply-maintenance.py`. The transformation script stops if the upstream code no longer matches the expected blocks, preventing a partial or misplaced update.
+The import script downloads the original SourceForge archive, verifies its checksum, validates the expected file layout, extracts it, and applies the exact source transformations defined in `scripts/apply-maintenance.py`. The transformation stops if the upstream code no longer matches the expected blocks.
 
 ## Projects, executables and licenses
 
-pdfsandwich invokes separate command-line programs. The normal `.deb` and `.rpm` packages depend on system packages; the optional **full runtime image** contains these tools together as an operating-system aggregate. Each component keeps its own license.
+pdfsandwich invokes separate command-line programs. Native packages depend on system packages; the optional full runtime images contain the tools together as operating-system aggregates. Each component retains its own license.
 
 | Component | Executables / purpose | Official project or source | License summary |
 |---|---|---|---|
 | pdfsandwich | `pdfsandwich` OCR workflow | https://www.tobias-elze.de/pdfsandwich/ and https://sourceforge.net/projects/pdfsandwich/ | GPL-2.0-or-later |
-| ImageMagick | `convert`, `identify`, `magick`; image conversion and inspection | https://github.com/ImageMagick/ImageMagick | ImageMagick License, Apache-2.0-style; attribution and license copy required |
+| ImageMagick | `convert`, `identify`, `magick`; image conversion and inspection | https://github.com/ImageMagick/ImageMagick | ImageMagick License; preserve license and attribution notices |
 | Tesseract OCR | `tesseract`; OCR engine | https://github.com/tesseract-ocr/tesseract | Apache-2.0 |
-| Tesseract language data | OCR trained models | https://github.com/tesseract-ocr/tessdata | Apache-2.0 |
-| Leptonica | Image-processing library used by Tesseract | https://github.com/DanBloomberg/leptonica | BSD-2-Clause-style license; consult the packaged notice |
-| Ghostscript | `gs`; PDF resizing and rendering | https://github.com/ArtifexSoftware/ghostpdl and https://ghostscript.com/releases/ | AGPL-3.0-or-later for the open-source release, or a separate commercial license |
-| Poppler | `pdfinfo`, `pdfunite`, `pdftoppm`; PDF inspection, merging and rasterization | https://poppler.freedesktop.org/ and https://gitlab.freedesktop.org/poppler/poppler | GPL family; the Xpdf-derived core is distributed under GPL-2.0 or GPL-3.0 and contributions include GPL-2.0-or-later notices |
-| unpaper | `unpaper`; scan cleanup | https://github.com/unpaper/unpaper | Project GPL-2.0; some individual files use MIT or Apache-2.0 SPDX notices |
-| ExactImage | `hocr2pdf`; legacy Tesseract fallback | https://exactcode.com/opensource/exactimage/ | GPL-2.0-only for the open-source release; commercial licensing is also offered |
+| Tesseract language data | OCR trained models | https://github.com/tesseract-ocr/tessdata and https://github.com/tesseract-ocr/tessdata_fast | Apache-2.0 |
+| Leptonica | Image-processing library used by Tesseract | https://github.com/DanBloomberg/leptonica | BSD-2-Clause-style license |
+| Ghostscript | `gs`; PDF resizing and rendering | https://github.com/ArtifexSoftware/ghostpdl and https://ghostscript.com/releases/ | Open-source release: AGPL-3.0-or-later |
+| Poppler | `pdfinfo`, `pdfunite`, `pdftoppm`; PDF inspection, merging and rasterization | https://poppler.freedesktop.org/ and https://gitlab.freedesktop.org/poppler/poppler | GPL family; consult packaged notices |
+| unpaper | `unpaper`; scan cleanup | https://github.com/unpaper/unpaper | Project GPL-2.0; some files use MIT or Apache-2.0 notices |
+| ExactImage | `hocr2pdf`; legacy Tesseract fallback | https://exactcode.com/opensource/exactimage/ | GPL-2.0-only open-source release |
+| Eclipse Temurin | Java 21 runtime in the Debian image | https://github.com/adoptium/temurin-build | OpenJDK GPL-2.0-with-classpath-exception plus component notices |
+| Alfresco base Java | Java 21 / Rocky Linux 9 base | https://hub.docker.com/r/alfresco/alfresco-base-java | Aggregate of OpenJDK, Rocky Linux and other separately licensed packages |
 
-The complete runtime image also contains Ubuntu and transitive library packages. Their exact versions and Debian copyright notices are copied into `/opt/pdfsandwich/licenses` inside the image and exported beside the release archive.
+### Ghostscript choice
 
-### License and redistribution notes
+Both runtime variants install **only the open-source Ghostscript package from their Linux distribution repositories**. No Artifex commercial Ghostscript binary or commercial license is included. Ghostscript's AGPL obligations still apply to redistribution and network use.
 
-The pdfsandwich source remains **GPL-2.0-or-later**. The full runtime image is an aggregate of separate executables and libraries; it does not relicense those components under one common license. In particular, Ghostscript is distributed by Artifex under the **GNU Affero General Public License** or a commercial agreement. Anyone redistributing or offering the full image as a network service must review and satisfy the applicable AGPL obligations. ImageMagick requires its license and attribution to accompany redistribution. Poppler, unpaper and ExactImage carry GPL-family obligations. The image therefore includes package manifests, copyright notices and common license texts; this documentation is not a substitute for legal advice.
+See `THIRD_PARTY_NOTICES.md` and the license bundles generated by GitHub Actions. This documentation is not legal advice.
 
 ## Runtime dependencies
 
-| Purpose | Executables | Debian / Ubuntu package | Fedora / RHEL-like package |
-|---|---|---|---|
-| PDF image conversion and page inspection | `convert`, `identify`, or ImageMagick 7 `magick` | `imagemagick` | `ImageMagick` |
-| OCR | `tesseract` | `tesseract-ocr` | `tesseract` |
-| English OCR data | Tesseract `eng` language | `tesseract-ocr-eng` | `tesseract-langpack-eng` |
-| PDF metadata and merging | `pdfinfo`, `pdfunite` | `poppler-utils` | `poppler-utils` |
-| Scan cleanup | `unpaper` | `unpaper` | `unpaper` |
-| PDF resizing / automatic downscaling | `gs` | `ghostscript` | `ghostscript` |
-| Legacy Tesseract HOCR fallback | `hocr2pdf` | `exactimage` | `exact-image` when available |
+| Purpose | Executables | Debian / Ubuntu | Fedora | Rocky / RHEL-like image |
+|---|---|---|---|---|
+| Image conversion | `convert`, `identify`, or ImageMagick 7 `magick` | `imagemagick` | `ImageMagick` | EPEL `ImageMagick` |
+| OCR engine | `tesseract` | `tesseract-ocr` | `tesseract` | Built from pinned upstream source in the full image |
+| OCR language data | `.traineddata` | `tesseract-ocr-all` or selected language packages | `tesseract-langpack-*` | Pinned `tessdata_fast` source archive |
+| PDF utilities | `pdfinfo`, `pdfunite`, `pdftoppm` | `poppler-utils` | `poppler-utils` | `poppler-utils` |
+| Scan cleanup | `unpaper` | `unpaper` | `unpaper` | EPEL `unpaper` |
+| PDF resizing/rendering | `gs` | open-source `ghostscript` package | open-source `ghostscript` package | open-source `ghostscript` package |
+| Legacy HOCR fallback | `hocr2pdf` | `exactimage` | `exact-image` when available | Not included; modern Tesseract native PDF output is used |
 
-Ghostscript is treated as conditional: it is required for explicit `-pagesize` changes and may be needed when `-maxpixels` causes automatic downscaling. `hocr2pdf` is only required with `-enforcehocr2pdf` or very old Tesseract versions.
+Ghostscript is conditionally required by pdfsandwich for explicit page resizing and may be used for automatic downscaling. `hocr2pdf` is needed only with `-enforcehocr2pdf` or very old Tesseract versions.
 
-LibreOffice, Pandoc and Docling are intentionally not part of this project or its build images.
+LibreOffice, Pandoc, Docling and OCRmyPDF are intentionally excluded.
 
-### Debian / Ubuntu
+### Debian / Ubuntu installation
 
 ```bash
 sudo apt-get update
@@ -68,7 +70,7 @@ Build dependencies:
 sudo apt-get install -y make gawk ocaml-nox perl
 ```
 
-### Fedora
+### Fedora installation
 
 ```bash
 sudo dnf install -y \
@@ -82,18 +84,18 @@ Build dependencies:
 sudo dnf install -y make gawk ocaml perl-interpreter rpm-build
 ```
 
-### RHEL / Rocky / AlmaLinux
+### Rocky Linux 9 / RHEL-like installation
 
-Some packages, notably ImageMagick and unpaper, may require EPEL and CRB/CodeReady Builder depending on the distribution release:
+ImageMagick and unpaper come from EPEL; CRB is enabled for supporting packages:
 
 ```bash
 sudo dnf install -y dnf-plugins-core epel-release
-sudo dnf config-manager --set-enabled crb || true
+sudo dnf config-manager --set-enabled crb
 sudo dnf install -y \
-  ImageMagick ghostscript poppler-utils \
-  tesseract tesseract-langpack-eng unpaper \
-  make gawk ocaml perl-interpreter rpm-build
+  ImageMagick ghostscript poppler-utils unpaper
 ```
+
+The Rocky full image builds Tesseract and Leptonica from pinned open-source release tags instead of relying on a Tesseract EL9 package. The exact commands are in `docker/full/rocky/Dockerfile` and the release-ready `Dockerfile.rocky`.
 
 ## Build from source
 
@@ -103,66 +105,112 @@ make
 sudo make PREFIX=/usr install
 ```
 
-The maintained code checks dependencies before processing a document. Missing required programs produce an error with Debian/Ubuntu and Fedora/RHEL package hints. Optional components produce a warning. On ImageMagick 7 systems, pdfsandwich automatically falls back from the legacy `convert`/`identify` commands to `magick`/`magick identify` when appropriate.
+The maintained code checks dependencies before processing a document. Missing required programs produce an error with Debian/Ubuntu and Fedora/RHEL package hints. Optional components produce warnings. ImageMagick 7 is supported through a fallback from the legacy commands to `magick`.
 
-## Full runtime image
+## Full runtime images
 
-The full image is based on Ubuntu 24.04 and includes:
+Two complete images are built and tested:
+
+| Variant | Runtime base | pdfsandwich installation | Tesseract source |
+|---|---|---|---|
+| Debian / Ubuntu | `eclipse-temurin:21-jre` | Compiled in a source build stage; release Dockerfile downloads the `.deb` | Ubuntu packages; all languages by default |
+| Rocky Linux 9 | `alfresco/alfresco-base-java:jre21-rockylinux9` | Compiled in a source build stage; release Dockerfile downloads the EL9 RPM | Tesseract and Leptonica built from pinned upstream tags; `tessdata_fast` included |
+
+Java is present because these bases are useful for Alfresco and Java-based integration. pdfsandwich itself does not require Java.
+
+Both variants contain:
 
 - pdfsandwich;
 - ImageMagick;
-- Ghostscript;
+- open-source Ghostscript;
 - Poppler utilities;
-- Tesseract OCR plus all Ubuntu Tesseract language packs;
+- Tesseract OCR and language data;
 - unpaper;
-- ExactImage / `hocr2pdf`;
-- component license notices and an installed-package manifest.
+- package and source license notices;
+- an installed-package manifest;
+- the optional `pdftoppm` wrapper enabled as the PDF rasterizer.
 
-Build it locally:
+The Debian variant additionally includes ExactImage / `hocr2pdf` as a legacy fallback.
+
+### Build the Debian / Temurin image
 
 ```bash
-docker build -f docker/full/Dockerfile -t pdfsandwich-full:local .
+docker build \
+  -f docker/full/debian/Dockerfile \
+  -t pdfsandwich-full-debian:local .
 ```
 
-Run it against the current directory:
+Limit language packs:
+
+```bash
+docker build \
+  -f docker/full/debian/Dockerfile \
+  --build-arg TESSERACT_LANGUAGES=eng,ita \
+  -t pdfsandwich-full-debian:local .
+```
+
+### Build the Rocky / Alfresco image
+
+```bash
+docker build \
+  -f docker/full/rocky/Dockerfile \
+  -t pdfsandwich-full-rocky9:local .
+```
+
+### Run either image
 
 ```bash
 docker run --rm \
   --user "$(id -u):$(id -g)" \
   -v "$PWD:/work" -w /work \
-  pdfsandwich-full:local \
+  pdfsandwich-full-debian:local \
   -lang ita+eng -o document_ocr.pdf document.pdf
 ```
 
-The entrypoint automatically routes PDF page rasterization through Poppler's `pdftoppm`, avoiding common ImageMagick PDF security-policy restrictions. Normal ImageMagick conversions still use ImageMagick.
+Replace the image name with `pdfsandwich-full-rocky9:local` for the Rocky variant.
 
-For every version tag, GitHub Actions adds a compressed Docker-compatible image archive named like `pdfsandwich-full-<version>-linux-amd64.docker.tar.gz`. Load it with:
+## Release-ready Dockerfiles
 
-```bash
-gzip -dc pdfsandwich-full-<version>-linux-amd64.docker.tar.gz | docker load
-```
+Every tagged release includes standalone files that do not require a source checkout:
+
+- `Dockerfile.debian`;
+- `Dockerfile.rocky`;
+- `install-debian.sh`;
+- `install-rocky.sh`;
+- `DOCKER-IMAGES.md`;
+- a tarball containing all these files and SHA-256 checksums.
+
+The standalone Dockerfiles install the complementary tools with `apt` or `dnf`, then download the matching pdfsandwich `.deb` or EL9 `.rpm` directly from the GitHub Release. The Rocky Dockerfile also contains all commands needed to download and compile Tesseract and Leptonica.
 
 ## Packaging and GitHub Actions
 
 The workflow in `.github/workflows/package.yml` builds and validates:
 
-- a maintained source archive: `pdfsandwich-<version>.tar.gz`;
-- a Debian/Ubuntu `.deb`;
-- a Red Hat-like binary `.rpm` and source RPM;
-- a full Linux amd64 runtime image archive with all OCR/PDF tools incorporated;
-- license bundles, installed-package manifests and SHA-256 checksum files.
+- maintained source archive `pdfsandwich-<version>.tar.gz`;
+- Debian/Ubuntu `.deb`;
+- Fedora binary RPM and SRPM;
+- Rocky/EL9 binary RPM and SRPM;
+- Debian/Temurin full runtime image;
+- Rocky/Alfresco full runtime image;
+- license bundles, installed-package manifests and SHA-256 checksums;
+- standalone release Dockerfiles and installation scripts.
 
-Packaging is run for pull requests, pushes to `main`, branches named `update/**`, version tags, and manual dispatches. A tag matching `v*` publishes all validated artifacts as a GitHub Release.
+Each image is checked for all expected executables and Italian/English OCR data, then subjected to an end-to-end OCR smoke test. Version tags matching `v*` publish all validated artifacts in the GitHub Release.
 
-The bootstrap workflow imports the pristine SourceForge archive only when the tracked source is absent. Subsequent development happens on the imported source files, while `UPSTREAM_SOURCE` and the maintenance transformation record how the source was obtained and changed.
+Docker archives can be loaded with:
+
+```bash
+gzip -dc pdfsandwich-full-<variant>-<version>-linux-amd64.docker.tar.gz | docker load
+```
 
 ## Related work reviewed
 
-- Olivier Berger's `pdftoppm` conversion-wrapper idea: https://gist.github.com/olberger/a88e3e2d4c684fdf94bbe5bc69ab9fe2
+- Olivier Berger's `pdftoppm` wrapper idea: https://gist.github.com/olberger/a88e3e2d4c684fdf94bbe5bc69ab9fe2
 - Carlos Ayam's Docker packaging experiment: https://github.com/carlosayam/pdfsandwich
+- Alfresco Transform Extras OCR multi-stage image pattern: https://github.com/aborroy/alfresco-transform-extras/tree/main/engines/ocr
 
-A separately maintained `pdftoppm` wrapper is included under `contrib/` and is enabled inside the full runtime image. It remains optional for native installations.
+The `contrib/convert-pdftoppm.sh` wrapper is enabled inside both full runtime images to avoid common ImageMagick PDF security-policy restrictions. It remains optional for native installations.
 
 ## Project status
 
-The first maintenance snapshot focuses on reproducible source import, preserved licensing, clearer dependency diagnostics, modern ImageMagick compatibility, repeatable `.tar.gz`, `.deb`, `.rpm`, SRPM packaging, and a self-contained runtime image. Functional changes beyond those compatibility and packaging fixes should be reviewed separately.
+The first maintenance snapshot focuses on reproducible source import, preserved licensing, dependency diagnostics, ImageMagick compatibility, repeatable native packaging and two complete runtime images. Functional changes beyond compatibility and packaging should be reviewed separately.
