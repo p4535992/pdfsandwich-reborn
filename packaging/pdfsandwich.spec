@@ -13,8 +13,18 @@ BuildRequires:  ocaml
 BuildRequires:  perl-interpreter
 Requires:       ImageMagick
 Requires:       poppler-utils
-Requires:       tesseract
 Requires:       unpaper
+
+# Fedora installs Tesseract as a normal runtime dependency. The EL9 full image
+# deliberately builds Tesseract and Leptonica from pinned open-source tags, so
+# the EL9 RPM keeps Tesseract as a weak dependency and is installed with
+# install_weak_deps=False inside that image.
+%if 0%{?rhel} == 9
+Recommends:     tesseract
+%else
+Requires:       tesseract
+%endif
+
 Recommends:     ghostscript
 Suggests:       exact-image
 
@@ -49,3 +59,4 @@ rm -rf %{buildroot}%{_docdir}/%{name}
 * Wed Aug 05 2026 pdfsandwich maintenance project <noreply@github.com> - 0.1.7.1-1
 - Import upstream 0.1.7 and add maintained packaging.
 - Improve dependency diagnostics and ImageMagick 7 compatibility.
+- Add Fedora and EL9 packaging for dual full-runtime container images.
