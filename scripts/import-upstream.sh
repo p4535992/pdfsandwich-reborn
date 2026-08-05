@@ -83,11 +83,7 @@ Original author: Tobias Elze
 - Original SourceForge code browser: https://sourceforge.net/p/pdfsandwich/code/HEAD/tree/trunk/src/
 EOF
 
-for patch_file in "$ROOT_DIR"/patches/*.patch; do
-  [[ -e "$patch_file" ]] || continue
-  echo "Applying $(basename "$patch_file")"
-  patch --directory "$ROOT_DIR" --strip=1 --forward < "$patch_file"
-done
+python3 "$ROOT_DIR/scripts/apply-maintenance.py"
 
 cat > "$ROOT_DIR/UPSTREAM_SOURCE" <<EOF
 Project: pdfsandwich
@@ -96,7 +92,8 @@ Version: ${UPSTREAM_VERSION}
 Archive: ${ARCHIVE}
 SourceForge URL: ${PRIMARY_URL}
 Verified MD5: ${EXPECTED_MD5}
+Maintenance transform: scripts/apply-maintenance.py
 Imported by: scripts/import-upstream.sh
 EOF
 
-echo "Imported and patched pdfsandwich ${UPSTREAM_VERSION} successfully."
+echo "Imported and maintained pdfsandwich ${UPSTREAM_VERSION} successfully."
