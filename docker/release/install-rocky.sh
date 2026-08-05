@@ -7,7 +7,7 @@ PDFSANDWICH_REPOSITORY="${PDFSANDWICH_REPOSITORY:-p4535992/pdfsandwich}"
 
 # ImageMagick and unpaper are supplied through EPEL 9. Tesseract is deliberately
 # built in Dockerfile.rocky because this project does not rely on an EL9 package.
-dnf install -y dnf-plugins-core ca-certificates curl
+dnf install -y dnf-plugins-core ca-certificates curl-minimal
 dnf config-manager --set-enabled crb
 dnf install -y \
   https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
