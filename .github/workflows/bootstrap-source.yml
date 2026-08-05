@@ -9,6 +9,7 @@ on:
       - '.github/workflows/bootstrap-source.yml'
       - 'scripts/import-upstream.sh'
       - 'scripts/apply-maintenance.py'
+      - 'tests/**'
 
 permissions:
   contents: write
@@ -46,7 +47,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            build-essential gawk make ocaml-nox \
+            build-essential gawk make ocaml-nox perl \
             imagemagick ghostscript poppler-utils \
             tesseract-ocr tesseract-ocr-eng unpaper exactimage
 
