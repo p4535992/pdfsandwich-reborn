@@ -1,0 +1,8 @@
+pdfsandwich (0.1.7.1-1) unstable; urgency=medium
+
+  * Import upstream 0.1.7 from SourceForge with checksum verification.
+  * Preserve GPL-2.0-or-later licensing and upstream attribution.
+  * Add clearer dependency diagnostics and ImageMagick 7 fallback.
+  * Add reproducible tar.gz, Debian and RPM packaging workflows.
+
+ -- pdfsandwich maintenance project <noreply@github.com>  Wed, 05 Aug 2026 09:00:00 +0200
