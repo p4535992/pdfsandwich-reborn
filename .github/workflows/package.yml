@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      - 'agent/**'
+      - 'update/**'
     tags:
       - 'v*'
   workflow_dispatch:
@@ -128,10 +128,113 @@ jobs:
           path: artifacts/
           if-no-files-found: error
 
+  full-runtime:
+    name: Full integrated runtime image
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build full runtime image
+        shell: bash
+        run: |
+          version="$(tr -d '[:space:]' < pdfsandwich_version)"
+          echo "PDFSANDWICH_VERSION=$version" >> "$GITHUB_ENV"
+          docker build \
+            --build-arg "PDFSANDWICH_VERSION=$version" \
+            --tag "pdfsandwich-full:$version" \
+            --file docker/full/Dockerfile \
+            .
+
+      - name: Verify incorporated tools
+        shell: bash
+        run: |
+          docker run --rm --entrypoint /bin/bash \
+            "pdfsandwich-full:${PDFSANDWICH_VERSION}" -euxo pipefail -c '
+              for command in pdfsandwich magick convert identify gs pdfinfo pdfunite pdftoppm tesseract unpaper hocr2pdf; do
+                command -v "$command"
+              done
+              pdfsandwich -version
+              tesseract --list-langs | grep -Fx eng
+              tesseract --list-langs | grep -Fx ita
+              gs --version
+              pdfinfo -v
+              unpaper --version
+            '
+
+      - name: OCR smoke test
+        shell: bash
+        run: |
+          test_dir="$RUNNER_TEMP/pdfsandwich-full-test"
+          mkdir -p "$test_dir"
+          cat > "$test_dir/input.ps" <<'POSTSCRIPT'
+          %!PS-Adobe-3.0
+          << /PageSize [595 842] >> setpagedevice
+          /Helvetica-Bold findfont 48 scalefont setfont
+          70 500 moveto
+          (PDFSANDWICH OCR TEST) show
+          showpage
+          POSTSCRIPT
+
+          docker run --rm --entrypoint /bin/bash \
+            -v "$test_dir:/work" -w /work \
+            "pdfsandwich-full:${PDFSANDWICH_VERSION}" \
+            -euxo pipefail -c 'ps2pdf input.ps input.pdf'
+
+          docker run --rm \
+            -v "$test_dir:/work" -w /work \
+            "pdfsandwich-full:${PDFSANDWICH_VERSION}" \
+            -nopreproc -lang eng -o output.pdf input.pdf
+
+          docker run --rm --entrypoint /bin/bash \
+            -v "$test_dir:/work" -w /work \
+            "pdfsandwich-full:${PDFSANDWICH_VERSION}" \
+            -euxo pipefail -c '
+              pdfinfo output.pdf
+              pdftotext output.pdf - | tr "[:lower:]" "[:upper:]" | grep -F "PDFSANDWICH"
+            '
+
+      - name: Export image, manifests and licenses
+        shell: bash
+        run: |
+          mkdir -p artifacts/license-export
+          image_archive="pdfsandwich-full-${PDFSANDWICH_VERSION}-linux-amd64.docker.tar.gz"
+          license_archive="pdfsandwich-full-${PDFSANDWICH_VERSION}-licenses.tar.gz"
+
+          docker save "pdfsandwich-full:${PDFSANDWICH_VERSION}" | gzip -9 > "artifacts/$image_archive"
+
+          container_id="$(docker create "pdfsandwich-full:${PDFSANDWICH_VERSION}")"
+          trap 'docker rm -f "$container_id" >/dev/null 2>&1 || true' EXIT
+          docker cp "$container_id:/opt/pdfsandwich/licenses/." artifacts/license-export/
+          docker cp "$container_id:/opt/pdfsandwich/THIRD_PARTY_NOTICES.md" artifacts/license-export/
+          docker cp "$container_id:/opt/pdfsandwich/project/." artifacts/license-export/project/
+          docker rm "$container_id"
+          trap - EXIT
+
+          tar -czf "artifacts/$license_archive" -C artifacts/license-export .
+          cp THIRD_PARTY_NOTICES.md artifacts/
+          cp artifacts/license-export/installed-packages.tsv \
+            "artifacts/pdfsandwich-full-${PDFSANDWICH_VERSION}-packages.tsv"
+          rm -rf artifacts/license-export
+
+          (cd artifacts && sha256sum \
+            "$image_archive" \
+            "$license_archive" \
+            "pdfsandwich-full-${PDFSANDWICH_VERSION}-packages.tsv" \
+            > SHA256SUMS-full)
+
+      - name: Upload full runtime artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdfsandwich-full-runtime
+          path: artifacts/
+          if-no-files-found: error
+          compression-level: 0
+
   release:
     name: Publish tagged release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [debian, rpm]
+    needs: [debian, rpm, full-runtime]
     runs-on: ubuntu-latest
     permissions:
       contents: write
