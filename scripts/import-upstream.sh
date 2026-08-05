@@ -35,7 +35,6 @@ SOURCE_DIR="$WORK_DIR/pdfsandwich-${UPSTREAM_VERSION}"
 
 required_files=(
   Makefile
-  README.md
   changelog
   changelog2deb.pl
   configure
@@ -58,9 +57,6 @@ done
 
 for file in "${required_files[@]}"; do
   case "$file" in
-    README.md)
-      install -m 0644 "$SOURCE_DIR/$file" "$ROOT_DIR/UPSTREAM_README.md"
-      ;;
     changelog2deb.pl|configure|make_control.pl|make_portfile.pl|txt2man)
       install -m 0755 "$SOURCE_DIR/$file" "$ROOT_DIR/$file"
       ;;
@@ -69,6 +65,23 @@ for file in "${required_files[@]}"; do
       ;;
   esac
 done
+
+# The authentic 0.1.7 SourceForge archive has no README file. Keep an explicit
+# upstream description rather than importing a README added by a mirror.
+cat > "$ROOT_DIR/UPSTREAM_README.md" <<'EOF'
+# Original pdfsandwich 0.1.7
+
+pdfsandwich generates searchable "sandwich" PDF files from scanned PDFs by
+running OCR and placing an invisible text layer behind the original page image.
+It is a command-line wrapper around Tesseract, ImageMagick, Poppler, unpaper and,
+for specific operations, Ghostscript or hocr2pdf.
+
+Original author: Tobias Elze
+
+- Project page: https://www.tobias-elze.de/pdfsandwich/
+- SourceForge project: https://sourceforge.net/projects/pdfsandwich/
+- Original SourceForge code browser: https://sourceforge.net/p/pdfsandwich/code/HEAD/tree/trunk/src/
+EOF
 
 for patch_file in "$ROOT_DIR"/patches/*.patch; do
   [[ -e "$patch_file" ]] || continue
