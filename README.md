@@ -13,7 +13,7 @@ A maintained continuation and packaging workspace for **pdfsandwich**, the comma
 - Upstream archive: `pdfsandwich-0.1.7.tar.bz2`
 - Verified upstream MD5: `60e617cc398251cec5f42b870b1fccb4`
 
-The import script downloads the original SourceForge archive, verifies it against the checksum published by Debian/Ubuntu, extracts it, and applies the maintenance patches kept in `patches/`.
+The import script downloads the original SourceForge archive, verifies its checksum, validates the expected file layout, extracts it, and applies the exact source transformations defined in `scripts/apply-maintenance.py`. The transformation script stops if the upstream code no longer matches the expected blocks, preventing a partial or misplaced update.
 
 ## License
 
@@ -49,7 +49,7 @@ sudo apt-get install -y \
 Build dependencies:
 
 ```bash
-sudo apt-get install -y make gawk ocaml-nox
+sudo apt-get install -y make gawk ocaml-nox perl
 ```
 
 ### Fedora
@@ -63,7 +63,7 @@ sudo dnf install -y \
 Build dependencies:
 
 ```bash
-sudo dnf install -y make gawk ocaml
+sudo dnf install -y make gawk ocaml perl-interpreter rpm-build
 ```
 
 ### RHEL / Rocky / AlmaLinux
@@ -76,12 +76,10 @@ sudo dnf config-manager --set-enabled crb || true
 sudo dnf install -y \
   ImageMagick ghostscript poppler-utils \
   tesseract tesseract-langpack-eng unpaper \
-  make gawk ocaml rpm-build
+  make gawk ocaml perl-interpreter rpm-build
 ```
 
 ## Build from source
-
-After the upstream source has been imported:
 
 ```bash
 make
@@ -95,14 +93,14 @@ The maintained code checks dependencies before processing a document. Missing re
 
 The workflow in `.github/workflows/package.yml` builds and validates:
 
-- a patched source archive: `pdfsandwich-<version>.tar.gz`
+- a maintained source archive: `pdfsandwich-<version>.tar.gz`
 - a Debian/Ubuntu `.deb`
-- a Red Hat-like `.rpm` and source RPM
+- a Red Hat-like binary `.rpm` and source RPM
 - SHA-256 checksum files
 
-Packaging is run for pull requests, pushes to `main`, version tags, and manual dispatches. Release publishing is intentionally separate from build validation.
+Packaging is run for pull requests, pushes to `main`, version tags, and manual dispatches. A tag matching `v*` also publishes the validated artifacts as a GitHub Release.
 
-The bootstrap workflow imports the pristine SourceForge archive only when the source is not already present. Subsequent development happens on the tracked source files, with the original import and maintenance patches documented.
+The bootstrap workflow imports the pristine SourceForge archive only when the tracked source is absent. Subsequent development happens on the imported source files, while `UPSTREAM_SOURCE` and the maintenance transformation record how the source was obtained and changed.
 
 ## Related work reviewed
 
@@ -113,4 +111,4 @@ A separately maintained `pdftoppm` wrapper is included under `contrib/` as an op
 
 ## Project status
 
-The first maintenance snapshot focuses on reproducible source import, preserved licensing, clearer dependency diagnostics, modern ImageMagick compatibility, and repeatable `.tar.gz`, `.deb`, and `.rpm` packaging. Functional changes beyond those compatibility and packaging fixes should be reviewed separately.
+The first maintenance snapshot focuses on reproducible source import, preserved licensing, clearer dependency diagnostics, modern ImageMagick compatibility, and repeatable `.tar.gz`, `.deb`, `.rpm`, and SRPM packaging. Functional changes beyond those compatibility and packaging fixes should be reviewed separately.
