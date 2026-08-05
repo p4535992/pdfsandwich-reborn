@@ -1,3 +1,5 @@
+%global debug_package %{nil}
+
 Name:           pdfsandwich
 Version:        0.1.7.1
 Release:        1%{?dist}
