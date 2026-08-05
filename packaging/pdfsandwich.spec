@@ -10,6 +10,7 @@ Source0:        %{name}-%{version}.tar.gz
 BuildRequires:  gawk
 BuildRequires:  make
 BuildRequires:  ocaml
+BuildRequires:  perl-interpreter
 Requires:       ImageMagick
 Requires:       poppler-utils
 Requires:       tesseract
