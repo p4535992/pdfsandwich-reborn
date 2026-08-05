@@ -151,9 +151,16 @@ jobs:
         run: |
           docker run --rm --entrypoint /bin/bash \
             "pdfsandwich-full:${PDFSANDWICH_VERSION}" -euxo pipefail -c '
-              for command in pdfsandwich magick convert identify gs pdfinfo pdfunite pdftoppm tesseract unpaper hocr2pdf; do
+              for command in pdfsandwich convert identify gs pdfinfo pdfunite pdftoppm tesseract unpaper hocr2pdf; do
                 command -v "$command"
               done
+              if command -v magick >/dev/null 2>&1; then
+                magick -version
+              else
+                convert -version
+              fi
+              test -x /usr/local/bin/pdfsandwich-full
+              test -x /usr/local/libexec/pdfsandwich/convert-pdftoppm.sh
               pdfsandwich -version
               tesseract --list-langs | grep -Fx eng
               tesseract --list-langs | grep -Fx ita
@@ -197,7 +204,7 @@ jobs:
       - name: Export image, manifests and licenses
         shell: bash
         run: |
-          mkdir -p artifacts/license-export
+          mkdir -p artifacts/license-export/project
           image_archive="pdfsandwich-full-${PDFSANDWICH_VERSION}-linux-amd64.docker.tar.gz"
           license_archive="pdfsandwich-full-${PDFSANDWICH_VERSION}-licenses.tar.gz"
 
