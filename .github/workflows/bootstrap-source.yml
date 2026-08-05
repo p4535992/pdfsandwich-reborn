@@ -8,7 +8,7 @@ on:
     paths:
       - '.github/workflows/bootstrap-source.yml'
       - 'scripts/import-upstream.sh'
-      - 'patches/**'
+      - 'scripts/apply-maintenance.py'
 
 permissions:
   contents: write
@@ -16,11 +16,11 @@ permissions:
 
 concurrency:
   group: bootstrap-source-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   import:
-    name: Import, patch, validate and commit
+    name: Import, maintain, validate and commit
     runs-on: ubuntu-24.04
     steps:
       - name: Check out branch
@@ -75,7 +75,7 @@ jobs:
             changelog changelog2deb.pl configure copyright ebuild-stub \
             make_control.pl make_portfile.pl manual.txt pdfsandwich.ml \
             pdfsandwich_version txt2man \
-            scripts/*.sh tests/*.sh contrib/*.sh debian/rules
+            scripts/*.sh scripts/*.py tests/*.sh contrib/*.sh debian/rules
           git commit -m "Import upstream pdfsandwich 0.1.7 source"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
