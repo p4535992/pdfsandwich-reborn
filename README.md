@@ -6,6 +6,15 @@ A maintained continuation and packaging workspace named **pdfsandwich-reborn** f
 
 > This repository is not the original upstream project. The original author is Tobias Elze. Upstream history, copyright and GPL licensing are preserved.
 
+## Current maintained release
+
+- Maintained version: **`0.1.8`**
+- Stable release tag: **`v0.1.8`**
+- Source base: verified upstream **pdfsandwich `0.1.7`** plus the maintained compatibility, packaging and runtime-image changes in this repository.
+- Release artifacts: source archive, Debian package, Fedora and EL9 RPM/SRPM packages, Debian/Temurin and Rocky/Alfresco full-runtime images, standalone Dockerfiles/installers, license bundles, manifests and SHA-256 checksums.
+
+The upstream version remains documented separately below so the maintained release number is not confused with the original SourceForge release.
+
 ## Upstream and provenance
 
 - Original project page: https://www.tobias-elze.de/pdfsandwich/
@@ -197,7 +206,7 @@ The workflow in `.github/workflows/package.yml` builds and validates:
 - license bundles, installed-package manifests and SHA-256 checksums;
 - standalone release Dockerfiles and installation scripts.
 
-Each image is checked for all expected executables and Italian/English OCR data, then subjected to an end-to-end OCR smoke test. Version tags matching `v*` publish all validated artifacts in the GitHub Release.
+Each image is checked for all expected executables and Italian/English OCR data, then subjected to an end-to-end OCR smoke test. Version tags matching `v*` publish all validated artifacts in the GitHub Release. A push to `main` whose head commit message contains `[release]` also publishes the stable `v<version>` release after every required build/test job succeeds; this keeps stable publishing gated by the same validation used for tagged releases.
 
 Docker archives can be loaded with:
 
@@ -215,4 +224,4 @@ The `contrib/convert-pdftoppm.sh` wrapper is enabled inside both full runtime im
 
 ## Project status
 
-The first maintenance snapshot focuses on reproducible source import, preserved licensing, dependency diagnostics, ImageMagick compatibility, repeatable native packaging and two complete runtime images. Functional changes beyond compatibility and packaging should be reviewed separately.
+Release **0.1.8** is the first stable pdfsandwich-reborn maintenance release. It preserves the verified upstream 0.1.7 source and licensing while adding maintained dependency diagnostics, ImageMagick compatibility, repeatable native packaging, two complete runtime images, standalone release installers/Dockerfiles, and validated GitHub Actions publishing.
