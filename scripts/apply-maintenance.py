@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Apply the first maintained pdfsandwich compatibility changes.
-
-The script intentionally uses exact source-block replacements. It aborts when
-an expected upstream block is absent or occurs more than once, so an upstream
-change cannot be patched silently in the wrong location.
-"""
+"""Apply the maintained pdfsandwich compatibility changes."""
 
 from __future__ import annotations
 
@@ -14,53 +9,63 @@ import sys
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "pdfsandwich.ml"
 VERSION = ROOT / "pdfsandwich_version"
+CHANGELOG = ROOT / "changelog"
+MAINTAINED_VERSION = "0.1.8"
 
+MAINTAINED_CHANGELOG = """pdfsandwich 0.1.8 (Wed, 12 Aug 2026 09:44:00 +0200):
+\tmaintained pdfsandwich-reborn release based on verified upstream 0.1.7
+\timproved dependency diagnostics and ImageMagick 7 command fallback
+\treproducible source, Debian, Fedora and EL9 package builds
+\tDebian/Temurin and Rocky/Alfresco full runtime images with license manifests
+\tstandalone release Dockerfiles, installers and automated GitHub publishing
+
+"""
 
 ORIGINAL_CHECKS = r'''(*check if binary bin exists (in search path):*)
 let check_for_binary bin =
-	try
-	let in_ch = Unix.open_process_in ("which " ^ bin) in
-	let s = input_line in_ch in
-	if s = "" then failwith "";
-	ignore (Unix.close_process_in in_ch);
-	with _ -> failwith 
-		("Could not find program " 
-		^ bin 
-		^ ". Make sure this program exists and can be found in your search path.\nUse command line options to specify a custom binary.")
+\ttry
+\tlet in_ch = Unix.open_process_in ("which " ^ bin) in
+\tlet s = input_line in_ch in
+\tif s = "" then failwith "";
+\tignore (Unix.close_process_in in_ch);
+\twith _ -> failwith 
+\t\t("Could not find program " 
+\t\t^ bin 
+\t\t^ ". Make sure this program exists and can be found in your search path.\nUse command line options to specify a custom binary.")
 ;;
 '''
 
 MAINTAINED_CHECKS = r'''(* Return the executable part of a command which may include arguments. *)
 let first_word command =
-	match Str.split (Str.regexp "[ \t]+") command with
-	| [] -> command
-	| h::_ -> h
+\tmatch Str.split (Str.regexp "[ \\t]+") command with
+\t| [] -> command
+\t| h::_ -> h
 ;;
 
 (* Check if a command exists in PATH or is an executable path. *)
 let command_exists command =
-	let executable = first_word command in
-	Sys.command ("command -v " ^ Filename.quote executable ^ " >/dev/null 2>&1") = 0
+\tlet executable = first_word command in
+\tSys.command ("command -v " ^ Filename.quote executable ^ " >/dev/null 2>&1") = 0
 ;;
 
 let check_for_binary ?(required=true) bin debian_package rpm_package =
-	if not (command_exists bin) then
-	(
-		let requirement = if required then "required" else "optional" in
-		let message = Printf.sprintf
-			"Could not find %s program '%s'.\nInstall it with:\n  Debian/Ubuntu: sudo apt-get install %s\n  Fedora/RHEL-like: sudo dnf install %s\nYou can also select a custom executable with the corresponding pdfsandwich command-line option."
-			requirement bin debian_package rpm_package
-		in
-		if required then failwith message else prerr_endline ("Warning: " ^ message)
-	)
+\tif not (command_exists bin) then
+\t(
+\t\tlet requirement = if required then "required" else "optional" in
+\t\tlet message = Printf.sprintf
+\t\t\t"Could not find %s program '%s'.\nInstall it with:\n  Debian/Ubuntu: sudo apt-get install %s\n  Fedora/RHEL-like: sudo dnf install %s\nYou can also select a custom executable with the corresponding pdfsandwich command-line option."
+\t\t\trequirement bin debian_package rpm_package
+\t\tin
+\t\tif required then failwith message else prerr_endline ("Warning: " ^ message)
+\t)
 ;;
 
 (* ImageMagick 7 commonly installs `magick` without legacy aliases. *)
 let maybe_use_imagemagick7 () =
-	if !convert = "convert" && not (command_exists !convert) && command_exists "magick" then
-		convert := "magick";
-	if !identify = "identify" && not (command_exists !identify) && command_exists "magick" then
-		identify := "magick identify"
+\tif !convert = "convert" && not (command_exists !convert) && command_exists "magick" then
+\t\tconvert := "magick";
+\tif !identify = "identify" && not (command_exists !identify) && command_exists "magick" then
+\t\tidentify := "magick identify"
 ;;
 '''
 
@@ -116,8 +121,12 @@ def main() -> int:
     )
 
     SOURCE.write_text(source_text, encoding="utf-8")
-    VERSION.write_text("0.1.7.1\n", encoding="utf-8")
-    print("Applied maintained dependency diagnostics and ImageMagick 7 fallback.")
+    upstream_changelog = CHANGELOG.read_text(encoding="utf-8")
+    CHANGELOG.write_text(MAINTAINED_CHANGELOG + upstream_changelog, encoding="utf-8")
+    VERSION.write_text(f"{MAINTAINED_VERSION}\n", encoding="utf-8")
+    print(
+        f"Applied maintained dependency diagnostics, ImageMagick 7 fallback and version {MAINTAINED_VERSION}."
+    )
     return 0
 
 

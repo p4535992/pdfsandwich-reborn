@@ -1,3 +1,15 @@
+pdfsandwich (0.1.8-1) unstable; urgency=medium
+
+  * Promote the maintained pdfsandwich-reborn codebase to release 0.1.8.
+  * Keep the verified upstream 0.1.7 source provenance while carrying the
+    maintained dependency diagnostics and ImageMagick 7 compatibility layer.
+  * Publish reproducible source, Debian, Fedora and EL9 packages together with
+    Debian/Temurin and Rocky/Alfresco full-runtime release artifacts.
+  * Refresh standalone Dockerfiles, installer defaults and release metadata for
+    version 0.1.8.
+
+ -- pdfsandwich maintenance project <noreply@github.com>  Wed, 12 Aug 2026 09:44:00 +0200
+
 pdfsandwich (0.1.7.1-1) unstable; urgency=medium
 
   * Import upstream 0.1.7 from SourceForge with checksum verification.

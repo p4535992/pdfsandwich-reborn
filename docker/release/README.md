@@ -2,6 +2,10 @@
 
 These files are attached directly to every tagged pdfsandwich GitHub Release.
 
+The defaults in this directory track the current maintained release, **0.1.8**.
+Override `PDFSANDWICH_VERSION` and `PDFSANDWICH_RELEASE_TAG` when testing a
+specific release candidate or older release.
+
 ## Debian / Ubuntu family
 
 `Dockerfile.debian` uses:
@@ -22,8 +26,8 @@ Build:
 ```bash
 docker build \
   -f Dockerfile.debian \
-  --build-arg PDFSANDWICH_VERSION=0.1.7.1 \
-  -t pdfsandwich-full-debian:0.1.7.1 .
+  --build-arg PDFSANDWICH_VERSION=0.1.8 \
+  -t pdfsandwich-full-debian:0.1.8 .
 ```
 
 Limit the Tesseract data instead of installing every available Ubuntu language:
@@ -31,9 +35,9 @@ Limit the Tesseract data instead of installing every available Ubuntu language:
 ```bash
 docker build \
   -f Dockerfile.debian \
-  --build-arg PDFSANDWICH_VERSION=0.1.7.1 \
+  --build-arg PDFSANDWICH_VERSION=0.1.8 \
   --build-arg TESSERACT_LANGUAGES=eng,ita \
-  -t pdfsandwich-full-debian:0.1.7.1 .
+  -t pdfsandwich-full-debian:0.1.8 .
 ```
 
 ## Red Hat / Rocky family
@@ -57,8 +61,8 @@ Build:
 ```bash
 docker build \
   -f Dockerfile.rocky \
-  --build-arg PDFSANDWICH_VERSION=0.1.7.1 \
-  -t pdfsandwich-full-rocky9:0.1.7.1 .
+  --build-arg PDFSANDWICH_VERSION=0.1.8 \
+  -t pdfsandwich-full-rocky9:0.1.8 .
 ```
 
 ## Running either image

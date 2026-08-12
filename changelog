@@ -1,3 +1,10 @@
+pdfsandwich 0.1.8 (Wed, 12 Aug 2026 09:44:00 +0200):
+	maintained pdfsandwich-reborn release based on verified upstream 0.1.7
+	improved dependency diagnostics and ImageMagick 7 command fallback
+	reproducible source, Debian, Fedora and EL9 package builds
+	Debian/Temurin and Rocky/Alfresco full runtime images with license manifests
+	standalone release Dockerfiles, installers and automated GitHub publishing
+
 pdfsandwich 0.1.7 (Fri, 10 Aug 2018 22:25:43 +0200):
 	new option -omp_thread_limit that controls number of threads for tesseract
 	and prevents tesseract >=4 from freezing when multiple threads are used

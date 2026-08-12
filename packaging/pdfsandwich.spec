@@ -1,7 +1,7 @@
 %global debug_package %{nil}
 
 Name:           pdfsandwich
-Version:        0.1.7.1
+Version:        0.1.8
 Release:        1%{?dist}
 Summary:        Generate searchable OCR sandwich PDF files
 
@@ -58,6 +58,11 @@ rm -rf %{buildroot}%{_docdir}/%{name}
 %{_mandir}/man1/pdfsandwich.1*
 
 %changelog
+* Wed Aug 12 2026 pdfsandwich maintenance project <noreply@github.com> - 0.1.8-1
+- Promote pdfsandwich-reborn to the stable 0.1.8 maintained release.
+- Refresh Debian/Fedora/EL9 packaging and release runtime metadata.
+- Keep verified upstream 0.1.7 provenance and maintained compatibility changes.
+
 * Wed Aug 05 2026 pdfsandwich maintenance project <noreply@github.com> - 0.1.7.1-1
 - Import upstream 0.1.7 and add maintained packaging.
 - Improve dependency diagnostics and ImageMagick 7 compatibility.

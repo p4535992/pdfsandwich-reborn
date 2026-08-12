@@ -34,7 +34,7 @@ FROM eclipse-temurin:21-jre AS runtime
 USER root
 
 ARG DEBIAN_FRONTEND=noninteractive
-ARG PDFSANDWICH_VERSION=0.1.7.1
+ARG PDFSANDWICH_VERSION=0.1.8
 ARG TESSERACT_LANGUAGES=all
 
 LABEL org.opencontainers.image.title="pdfsandwich full runtime (Debian/Ubuntu)" \
